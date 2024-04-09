@@ -20,9 +20,11 @@ class Graph:
         }
     """ 
     
-    def __init__(self, path: Path) -> None:
-        with path.open() as f:
+    def __init__(self, number: int) -> None:
+        with (Path(__file__).parent.parent / Path(f"graphs/{number}.txt")).open() as f:
             self.data: str = f.read()
+            
+        self.number = number
         
         _filter = lambda s: list(filter(lambda x: x, s))
         splitted_data: list[str] = _filter(self.data.split('\n'))
@@ -97,6 +99,16 @@ class Graph:
             
         return matrix
     
+    
+    def get_value_matrix(self):
+        length = len(self.table.keys())
+        matrix = [[] for _ in range(length)]
+        
+        for k, v in self.table.items():
+            matrix[int(k)] = [v.get(str(i)) if str(i) in v.keys() else 0 for i in range(length)]
+            
+        return matrix
+    
     def _get_predecessors(self, node):
         
         if node not in self.table.keys():
@@ -130,7 +142,10 @@ class Graph:
                     
         return 1 in [transitive[i][i] for i in range(n)]
     
-    def has_circuit_by_deletions(self) -> bool:
+    def has_circuit_by_deletions(self, step:bool = False):
+        
+        steps = []
+        
         #stupid hack for backwards compatibility, I AM FUCKING STUPID
         constraint: list[list[str | list[str]]] = [[k] + [str(e) for e in v.keys()] + list(v.values()) for k,v in self.get_constraint_table().items()]
         
@@ -148,11 +163,14 @@ class Graph:
                 
                 constraint.remove(line)
                 deleted_nodes.append(line[0]) # type: ignore
+                
+                if step:
+                    steps.append(constraint.copy()) # type: ignore
             
             if is_impossible == 0:
-                return False
+                return False, steps
             
-        return True
+        return True, steps
     
     def get_ranks(self):
         constraint: list[list[str | list[str]]] = [[k] + [str(e) for e in v.keys()] + list(v.values()) for k,v in self.get_constraint_table().items()]
@@ -176,16 +194,11 @@ class Graph:
         
     def __str__(self) -> str:
         
-        matrix: list[list[str]] = [[f"{i}"] + ['' for _ in range(self.size)] for i in range(self.size)]
+        matrix: list[list[str]] = [[f"{i}"] + ['.' for _ in range(self.size)] for i in range(self.size)]
         
         for node, trans in self.table.items():           
             for _node in trans.keys():
                 matrix[int(node)][int(_node)+1] = '1'
                 
-        return tabulate(matrix, tablefmt="rounded_grid", headers=[str(i) for i in range(self.size)])
+        return tabulate(matrix, tablefmt="rounded_grid", headers=[f"n°{self.number}"]+[str(i) for i in range(self.size)])
     
-graphs = [Graph(Path(f"graphs/{i}.txt")) for i in range(1, 15)]
-
-
-for g in graphs:
-    print(g)
