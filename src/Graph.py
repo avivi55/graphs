@@ -24,16 +24,19 @@ class Graph:
         with path.open() as f:
             self.data: str = f.read()
         
-        self.splitted_string: list[list[str]] = [string.split(' ') for string in self.data.split('\n')]
+        _filter = lambda s: list(filter(lambda x: x, s))
+        splitted_data: list[str] = _filter(self.data.split('\n'))
         
-        self.table: dict[str, dict[str, int]] = self._table_from_valid_list()
+        splitted_string: list[list[str]] = [_filter(string.split(' ')) for string in splitted_data]
         
+        self.table: dict[str, dict[str, int]] = self._table_from_valid_list(splitted_string)          
+    
         
-    def _table_from_valid_list(self) -> dict[str, dict[str, int]]:
+    def _table_from_valid_list(self, splitted_string: list[list[str]]) -> dict[str, dict[str, int]]:
 
         table: dict[str, dict[str, int]] = {}
                 
-        nodes: list[str] = [s[0] for s in self.splitted_string]
+        nodes: list[str] = [s[0] for s in splitted_string]
         
         # initialization of the table
         for node in nodes:
@@ -48,9 +51,9 @@ class Graph:
        
         size += 1
         # We just added 2 to the size because of the the 2 new implicit states: alpha & omega
-        all_predecessors: list[str] = self._get_all_predecessors()
+        all_predecessors: list[str] = self._get_all_predecessors(splitted_string)
         
-        for line in self.splitted_string:
+        for line in splitted_string:
             
             label: str = line[0]
             predecessors: list[str] = line[2:]
@@ -62,26 +65,27 @@ class Graph:
             if label not in all_predecessors:
                 # we subtract 2 because we added ɑ & ω
                 old_size: int = size-2
-                table[str(label)] = {str(size-1): int(self.splitted_string[old_size-1][1])}
+                table[str(label)] = {str(size-1): int(splitted_string[old_size-1][1])}
             
             for node in predecessors:
-                table[node] |= {label: int(self.splitted_string[int(node)-1][1])}
+                table[node] |= {label: int(splitted_string[int(node)-1][1])}
         
         self.size: int = len(table.keys())
         return table
     
-    def _get_all_predecessors(self) -> list[str]:
+    def _get_all_predecessors(self, splitted_string) -> list[str]:
         predecessors: list[str] = []
         
-        for line in self.splitted_string:
+        for line in splitted_string:
             predecessors += line[2:]
             
         return list(set(predecessors))
     
     def has_negative_arcs(self) -> bool:
-        for line in self.splitted_string:
-            if int(line[1]) < 0:
-                return True 
+        for line in self.table.values():
+            for value in line.values():
+                if value < 0:
+                    return True 
         return False
     
     def get_matrix(self) -> list[list[int]]:
@@ -93,12 +97,27 @@ class Graph:
             
         return matrix
     
+    def _get_predecessors(self, node):
         
-    def get_constraint_table(self) -> list[list[str | list[str]]]:
-        return [line[:2] + [[x for x in line[2:]]] for line in self.splitted_string]
-    
-    def get_altered_constraint_table(self) -> list[Any]:
-        return []
+        if node not in self.table.keys():
+            return []
+        
+        predecessors = []
+        for label, successors in self.table.items():
+            if node in successors.keys():
+                predecessors.append(label)
+                
+        return list(set(predecessors))
+                
+        
+    def get_constraint_table(self):
+        table = {}
+        
+        for label, successors in self.table.items():
+            if time:=list(successors.values()):
+                table[label] = {time[0]: self._get_predecessors(label)}
+                
+        return table
     
     def has_circuit_by_transitive(self) -> bool:
         transitive = self.get_matrix()
@@ -112,7 +131,9 @@ class Graph:
         return 1 in [transitive[i][i] for i in range(n)]
     
     def has_circuit_by_deletions(self) -> bool:
-        constraint: list[list[str | list[str]]] = self.get_constraint_table()
+        #stupid hack for backwards compatibility, I AM FUCKING STUPID
+        constraint: list[list[str | list[str]]] = [[k] + [str(e) for e in v.keys()] + list(v.values()) for k,v in self.get_constraint_table().items()]
+        
         deleted_nodes: list[str] = []
                 
         for _ in range(len(constraint)):
@@ -134,7 +155,7 @@ class Graph:
         return True
     
     def get_ranks(self):
-        constraint: list[list[str | list[str]]] = self.get_constraint_table()
+        constraint: list[list[str | list[str]]] = [[k] + [str(e) for e in v.keys()] + list(v.values()) for k,v in self.get_constraint_table().items()]
         deleted_nodes: list[str] = []
         ranks = {}
                 
@@ -163,15 +184,8 @@ class Graph:
                 
         return tabulate(matrix, tablefmt="rounded_grid", headers=[str(i) for i in range(self.size)])
     
-g = Graph(Path("graphs/2.txt"))
-    
-print(tabulate(g.get_constraint_table(),
-               ['Code', 'Durée', 'Prédecesseurs'],
-               "rounded_grid"))
-pprint(g.table)
-print(g.has_circuit_by_deletions())
-print(g.has_circuit_by_transitive())
-# print(g.has_negative_arcs())
-# pprint(g.get_matrix())
-pprint(g.get_ranks())
-print(g)
+graphs = [Graph(Path(f"graphs/{i}.txt")) for i in range(1, 15)]
+
+
+for g in graphs:
+    print(g)
