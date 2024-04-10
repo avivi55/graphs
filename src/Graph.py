@@ -1,8 +1,9 @@
 from pathlib import Path
 from pprint import pprint
+from matplotlib.pyplot import margins
+from networkx import predecessor
 from tabulate import tabulate
-from typing import Any
-
+from rich import table
 class Graph:
     """
         The graph is represented using a dictionary with this form:
@@ -20,11 +21,17 @@ class Graph:
         }
     """ 
     
-    def __init__(self, number: int) -> None:
-        with (Path(__file__).parent.parent / Path(f"graphs/{number}.txt")).open() as f:
-            self.data: str = f.read()
+    def __init__(self, number: int = 0, path_override: str = "") -> None:
+        
+        if (path_override == ""):
+            with (Path(__file__).parent.parent / Path(f"graphs/{number}.txt")).open() as f:
+                self.data: str = f.read()
+            self.number = number
+        else:
+            with Path(path_override).open() as f:
+                self.data: str = f.read()
+            self.number = 'X'
             
-        self.number = number
         
         _filter = lambda s: list(filter(lambda x: x, s))
         splitted_data: list[str] = _filter(self.data.split('\n'))
@@ -128,6 +135,8 @@ class Graph:
         for label, successors in self.table.items():
             if time:=list(successors.values()):
                 table[label] = {time[0]: self._get_predecessors(label)}
+            else:
+                table[label] = {0: self._get_predecessors(label)}
                 
         return table
     
@@ -173,24 +182,109 @@ class Graph:
         return True, steps
     
     def get_ranks(self):
+        
+        if self.has_circuit_by_transitive():
+            raise ValueError("The graph has a circuit !!!! get fucked loser")
+        
         constraint: list[list[str | list[str]]] = [[k] + [str(e) for e in v.keys()] + list(v.values()) for k,v in self.get_constraint_table().items()]
         deleted_nodes: list[str] = []
         ranks = {}
-                
-        for i in range(len(constraint)):
-            
+        
+        current_rank = 0
+        while (len(constraint) > 0):
+                        
             for line in constraint:
-                _line: list[str | list[str]] = line[:2] + [list(filter(lambda x: x not in deleted_nodes, line[2]))]
-
-                if _line[2]:
+                
+                label: str = line[0] # type:ignore
+                predecessors = line[2]
+                if predecessors:
                     continue
                 
-                ranks[line[0]] = i
-                constraint.remove(line)
-                deleted_nodes.append(line[0]) # type: ignore
-                break
+                ranks[label] = current_rank
+                deleted_nodes.append(label)
+            
+            constraint = list(filter(lambda l: l[0] not in deleted_nodes, constraint))
+            constraint = [line[:2] + [list(filter(lambda x: x not in deleted_nodes, line[2]))] for line in constraint]
+            
+            current_rank +=1
             
         return ranks
+    
+    def _get_node_time(self, node):
+        if not node in self.table.keys():
+            raise ValueError("node not in graph")
+        
+        l = list(self.table[node].values())
+        return l[0] if len(l) > 0 else 0
+    
+    def _get_successors(self, node):
+        
+        if node not in self.table.keys():
+            return []
+        
+        return list(self.table[node].keys())
+    
+    def get_node_max_time(self, node):
+        predecessors = self._get_predecessors(node)
+        if not predecessors:
+            return 0
+        
+        return max([self.get_node_max_time(x) + self._get_node_time(x) for x in predecessors])
+
+    def get_node_min_time(self, node):
+        successors = self._get_successors(node)
+        if not successors:
+            return self.get_node_max_time(node)
+        
+        return min([self.get_node_min_time(x) - self._get_node_time(node) for x in successors])
+        
+    def get_early_calendar(self):
+        
+        ranks = self.get_ranks()
+               
+        return [self.get_node_max_time(n)for n in ranks.keys()]
+        
+    def get_late_calendar(self):
+        
+        ranks = self.get_ranks()
+        
+        return [self.get_node_min_time(n) for n in ranks.keys()]
+    
+    
+    def get_margins(self):
+        
+        ranks = self.get_ranks()
+        
+        early = [self.get_node_min_time(n) for n in ranks.keys()]
+        late = [self.get_node_max_time(n) for n in ranks.keys()]
+
+        return [a - b for a,b in zip(early, late)]
+    
+    
+
+    # t = table.Table(title="Calendrier au plus tard", show_lines=True)
+    
+    # t.add_column("rank")
+    
+    # for e in ranks.values():
+    #     t.add_column(str(e))
+        
+    # t.add_row("node", *[f"{k}({self._get_node_time(k)})" for k in ranks.keys()])
+    # t.add_row("successors", *[','.join(self._get_successors(n)) for n in ranks.keys()])
+    # t.add_row("calendar", *)
+    
+    def get_critical_path(self):
+        
+        rank = self.get_ranks()
+        
+        margins = self.get_margins()
+        
+        
+        return []
+        
+        
+        
+        
         
     def __str__(self) -> str:
         
