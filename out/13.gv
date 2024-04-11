@@ -1,0 +1,15 @@
+digraph { rankdir=LR
+    "1" [color="red"]
+    "2" [color="red"]
+    "3" [color="red"]
+    "4" [color="red"]
+    "0" [color="red"]
+    "5" [color="red"]
+    "1" -> "2" [label="9" color="red" ] 
+    "2" -> "5" [label="2" color="red" ] 
+    "3" -> "2" [label="4" color="red" ] 
+    "3" -> "4" [label="4" color="red" ] 
+    "4" -> "5" [label="7" color="red" ] 
+    "0" -> "1" [label="0" color="red" ] 
+    "0" -> "3" [label="0" color="red" ] 
+}
