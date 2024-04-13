@@ -1,8 +1,8 @@
 from pathlib import Path
-from pprint import pprint
+from subprocess import list2cmdline
 from typing import Any
 from tabulate import tabulate
-from rich import table
+from rich import print, table
 
 class Graph:
     """
@@ -20,46 +20,76 @@ class Graph:
             ...
         }
     """ 
-    
-    def __init__(self, number: int = 0, path: str = "", string_override= False) -> None:
+    def __init__(self, table: dict):
         
+        self.table: dict = table.copy()
         self.number = 'X'
+        self.ranks = {}
+        self.size = len(table.keys()) 
+        self.first_node = list(self.table.keys())[0]
+        if not self.has_circuit_by_transitive():
+            self.ranks = self.get_ranks() 
+            
+        
+    @classmethod    
+    def from_file(cls, number: int = 0, path: str = "", string_override= False):
+        
+        
         if (string_override):
-            self.data = path # type: ignore
+            data = path # type: ignore
         elif (path == ""):
             with (Path(__file__).parent.parent / Path(f"graphs/{number}.txt")).open() as f:
-                self.data: str = f.read()
-            self.number = number
+                data: str = f.read()
+            number = number
         else:
             with Path(path).open() as f:
-                self.data: str = f.read()
+                data: str = f.read()
             
         
         _filter = lambda s: list(filter(lambda x: x, s))
-        splitted_data: list[str] = _filter(self.data.split('\n'))
+        splitted_data: list[str] = _filter(data.split('\n'))
         
         splitted_string: list[list[int]] = [[int(i) for i in _filter(string.split(' '))] for string in splitted_data]
         
-        self.table: dict[int, dict[int, int]] = self.table_from_valid_list(splitted_string)          
+        table: dict[int, dict[int, int]] = cls.table_from_valid_list(splitted_string)
+        
+        g = Graph(table)
+        
+        g.number = number
+        
+        return g
+      
         
     def to_dot_format(self, highlight_critical_path=False):
         to_dot = "digraph { rankdir=LR\n"
         
         crit: list = []
+        ranks: dict = {}
+        path = {}
         if highlight_critical_path:
-            
+            ranks = self.ranks
             crit = self.get_critical_nodes()
+            path = self.get_longest_path()
             for n in crit:
-                to_dot += f'    "{n}" [color="red"]\n'
+                to_dot += f'    "{n}" [color="red" label="{n}"]\n'
         
         for node, succs in self.table.items():
             for k, v in succs.items():
-                to_dot += f'    "{node}" -> "{k}" [label="{v}"{""" color="red" """ if node in crit and k in crit else """"""}] \n'
-
+                to_dot += f'    "{node}" -> "{k}" [label="{v}"'
+                
+                if k in crit and node == 0:
+                    to_dot += ' color="red"'
+                
+                if path.get(node) and k in path.get(node): # in crit and k in crit:
+                    to_dot += ' color="red"'
+                
+                to_dot +=' ]\n'
+                    
         to_dot += "}"
         return to_dot
-        
-    def table_from_valid_list(self, splitted_string: list[list[int]]):
+    
+    @classmethod
+    def table_from_valid_list(cls, splitted_string: list[list[int]]):
 
         table: dict[int, dict[int, int]] = {}
                 
@@ -78,7 +108,7 @@ class Graph:
        
         size += 1
         # We just added 2 to the size because of the the 2 new implicit states: alpha & omega
-        all_predecessors: list[int] = self.__get_all_predecessors(splitted_string)
+        all_predecessors: list[int] = cls.__get_all_predecessors(splitted_string)
         
         for line in splitted_string:
             
@@ -97,10 +127,11 @@ class Graph:
             for node in predecessors:
                 table[node] |= {label: int(splitted_string[int(node)-1][1])}
         
-        self.size: int = len(table.keys())
+        # self.size: int = len(table.keys())
         return table
     
-    def __get_all_predecessors(self, splitted_string) -> list[int]:
+    @classmethod
+    def __get_all_predecessors(cls, splitted_string) -> list[int]:
         predecessors: list[int] = []
         
         for line in splitted_string:
@@ -116,11 +147,10 @@ class Graph:
         return False
     
     def get_matrix(self) -> list[list[int]]:
-        length = len(self.table.keys())
-        matrix = [[] for _ in range(length)]
+        matrix = [[] for _ in range(self.size)]
         
-        for k, v in self.table.items():
-            matrix[int(k)] = [1 if i in v.keys() else 0 for i in range(length)]
+        for i, (k, v) in enumerate(self.table.items()):
+            matrix[i] = [1 if i in v.keys() else 0 for i in range(self.size)]
             
         return matrix  
     
@@ -199,8 +229,8 @@ class Graph:
     
     def get_ranks(self):
         
-        if self.has_circuit_by_transitive():
-            raise ValueError("The graph has a circuit !!!! get fucked loser")
+        # if self.has_circuit_by_transitive():
+        #     raise ValueError("The graph has a circuit !!!! get fucked loser")
         
         constraint: list[list[Any]] = [[k] + [e for e in v.keys()] + list(v.values()) for k,v in self.get_constraint_table().items()]
         deleted_nodes: list[int] = []
@@ -272,7 +302,59 @@ class Graph:
         c = dict(filter(lambda p: p[1] == 0, margins.items())).keys()
         
         return list(c)
+    
+    def get_critical_path(self):
+        path = {}
         
+        crits = self.get_critical_nodes()
+        ranks = self.get_ranks()
+        for node in crits:
+            successors = list(filter(lambda x: x in crits, self.get_successors(node)))
+            successors.sort(key=ranks.get)# type:ignore
+            path[node] = list(filter(lambda n :ranks.get(n) == ranks.get(successors[0]), successors)) if successors else []
+        
+        return path
+    
+    def get_inflection_nodes(self):
+        p = self.get_critical_path()
+        return sorted(list(filter(lambda n: len(p[n]) >= 2 and n != 0, p.keys())), key=self.get_ranks().get, reverse=True)
+    
+    def get_sub_table(self, node):
+        last_node = list(self.table.keys())[-1]
+        if node == last_node:
+            return {last_node : self.table[last_node]}
+        
+        t = {}
+        
+        p = self.get_critical_path()
+        for n in p[node]:
+                t |= self.get_sub_table(n)
+        
+        return {node : dict(filter(lambda e: e[0] in p.keys(), self.table[node].items()))} | t
+    
+    
+    def get_sub_graph(self, node):
+        return Graph(self.get_sub_table(node))
+            
+    
+    def get_longest_path(self):
+        path = self.get_critical_path()
+        inflictions = self.get_inflection_nodes()
+        
+        if not inflictions:
+            return path
+
+        for node in path[self.first_node]:
+            l = list(self.get_sub_graph(node).get_longest_path().keys())
+            filt = list(filter(lambda n: n in l, path[node]))
+            path[node] = filt
+            
+        inflictions = self.get_inflection_nodes()
+        
+            
+        return path
+            
+    
     def __str__(self) -> str:
         
         matrix: list[list[str]] = [[f"{i}"] + ['.' for _ in range(self.size)] for i in range(self.size)]
