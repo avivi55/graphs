@@ -8,8 +8,6 @@ import graphviz
 
 graphs = [Graph.from_file(i) for i in range(1, 15)]
 
-graphs.append(Graph.from_file(path="./graphs/test_2.txt"))
-
 DIR = Path(__file__).parent.parent
 
 for graph in graphs:
