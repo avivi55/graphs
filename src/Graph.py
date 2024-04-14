@@ -191,40 +191,41 @@ class Graph:
     #     return 1 in [transitive[i][i] for i in range(n)]
     
     def has_circuit_by_deletions(self, step:bool = False):
-        
         steps = []
         
-        #stupid hack for backwards compatibility, I AM FUCKING STUPID
         constraint: list[list[Any]] = [[k] + [e for e in v.keys()] + list(v.values()) for k,v in self.get_constraint_table().items()]
-        
         deleted_nodes: list[int] = []
-                
-        for _ in range(len(constraint)):
+        
+        while (len(constraint) > 0):
             is_impossible = 0
+            intermediate_step = []
             
             for line in constraint:
-                _line = line[:2] + [list(filter(lambda x: x not in deleted_nodes, line[2]))]
-
-                if _line[2]:
+                
+                label: int = line[0]
+                predecessors: int = line[2]
+                
+                if predecessors:
                     is_impossible += 1
                     continue
                 
-                constraint.remove(line)
-                deleted_nodes.append(line[0])
-                
+                deleted_nodes.append(label)
+            
                 if step:
-                    steps.append(constraint.copy())
+                    intermediate_step.append(label)
+                    
+            if step:
+                steps.append(intermediate_step.copy())
             
-            if is_impossible == 0:
-                return False, steps
+            if is_impossible == len(constraint):
+                return True, steps
             
-        return True, steps
+            constraint = list(filter(lambda l: l[0] not in deleted_nodes, constraint))
+            constraint = [line[:2] + [list(filter(lambda x: x not in deleted_nodes, line[2]))] for line in constraint]
+            
+        return False, steps
     
-    def get_ranks(self):
-        
-        # if self.has_circuit_by_transitive():
-        #     raise ValueError("The graph has a circuit !!!! get fucked loser")
-        
+    def get_ranks(self):        
         constraint: list[list[Any]] = [[k] + [e for e in v.keys()] + list(v.values()) for k,v in self.get_constraint_table().items()]
         deleted_nodes: list[int] = []
         ranks = {}
@@ -234,8 +235,8 @@ class Graph:
                         
             for line in constraint:
                 
-                label: int = line[0] # type:ignore
-                predecessors = line[2]
+                label: int = line[0]
+                predecessors: int = line[2]
                 if predecessors:
                     continue
                 
@@ -256,7 +257,7 @@ class Graph:
         l = list(self.table[node].values())
         return l[0] if len(l) > 0 else 0
     
-    def get_successors(self, node):
+    def get_successors(self, node) -> list[int]:
         
         if node not in self.table.keys():
             return []
