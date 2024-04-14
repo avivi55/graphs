@@ -24,12 +24,8 @@ class Graph:
         
         self.table: dict = table.copy()
         self.number = 'X'
-        self.ranks = {}
         self.size = len(table.keys()) 
         self.first_node = list(self.table.keys())[0]
-        if not self.has_circuit_by_transitive():
-            self.ranks = self.get_ranks() 
-            
         
     @classmethod    
     def from_file(cls, number: int = 0, path: str = "", string_override= False):
@@ -67,7 +63,6 @@ class Graph:
         ranks: dict = {}
         path = {}
         if highlight_critical_path:
-            ranks = self.ranks
             crit = self.get_critical_nodes()
             path = self.get_longest_path()
             for n in crit:
@@ -150,6 +145,7 @@ class Graph:
         matrix = [[] for _ in range(self.size)]
         
         for i, (k, v) in enumerate(self.table.items()):
+            
             matrix[i] = [1 if i in v.keys() else 0 for i in range(self.size)]
             
         return matrix  
@@ -186,16 +182,16 @@ class Graph:
                 
         return table
     
-    def has_circuit_by_transitive(self) -> bool:
-        transitive = self.get_matrix()
-        n = len(transitive)
+    # def has_circuit_by_transitive(self) -> bool:
+    #     transitive = self.get_matrix()
+    #     n = len(transitive)
         
-        for k in range(n):
-            for i in range(n):
-                for j in range(n):
-                    transitive[i][j] = transitive[i][j] or (transitive[i][k] and transitive[k][j])
+    #     for k in range(n):
+    #         for i in range(n):
+    #             for j in range(n):
+    #                 transitive[i][j] = transitive[i][j] or (transitive[i][k] and transitive[k][j])
                     
-        return 1 in [transitive[i][i] for i in range(n)]
+    #     return 1 in [transitive[i][i] for i in range(n)]
     
     def has_circuit_by_deletions(self, step:bool = False):
         
@@ -315,7 +311,7 @@ class Graph:
         
         return path
     
-    def get_inflection_nodes(self):
+    def get_inflection_nodes(self)-> list[int]:
         p = self.get_critical_path()
         return sorted(list(filter(lambda n: len(p[n]) >= 2 and n != 0, p.keys())), key=self.get_ranks().get, reverse=True)
     
@@ -339,18 +335,17 @@ class Graph:
     
     def get_longest_path(self):
         path = self.get_critical_path()
-        inflictions = self.get_inflection_nodes()
-        
+        inflictions: list[int] = self.get_inflection_nodes()
+
         if not inflictions:
             return path
-
-        for node in path[self.first_node]:
-            l = list(self.get_sub_graph(node).get_longest_path().keys())
-            filt = list(filter(lambda n: n in l, path[node]))
-            path[node] = filt
-            
-        inflictions = self.get_inflection_nodes()
         
+        inflictions = list(filter(lambda x:x != self.first_node,inflictions))        
+
+        for node in inflictions:
+            sub_longest = self.get_sub_graph(node).get_longest_path()
+            filtered = list(filter(lambda n: n in sub_longest.keys(), path[node]))
+            path[node] = filtered
             
         return path
             
