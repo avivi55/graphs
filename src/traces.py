@@ -138,7 +138,6 @@ for graph in graphs:
             f.write('\n')
             f.write("Plus long chemins\n")
             print(graph.get_longest_path(), file=f)
-            print(tabulate([[0]], tablefmt="rounded_grid"), file=f)
             
             graphviz.Source(graph.to_dot_format(True)) \
                 .render(outfile=((DIR / Path(f"traces/{graph.number}_highlighted_path.png"))), view=False, format="png")

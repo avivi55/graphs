@@ -104,6 +104,3 @@ C'est un graphe d'ordonnancement
 
 Plus long chemins
 {1: [3], 2: [4], 3: [5], 4: [3], 0: [1, 2], 5: []}
-╭───╮
-│ 0 │
-╰───╯

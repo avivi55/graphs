@@ -148,6 +148,3 @@ C'est un graphe d'ordonnancement
 
 Plus long chemins
 {1: [4], 4: [5], 5: [8], 8: [11], 11: [12], 0: [1], 12: []}
-╭───╮
-│ 0 │
-╰───╯
