@@ -42,7 +42,7 @@ def get_infos(x: int):
     print()
         
 def get_calendars(x:int):
-    if graphs[x].has_circuit_by_deletions() or graphs[x].has_negative_arcs():
+    if graphs[x].has_circuit_by_deletions()[0] or graphs[x].has_negative_arcs():
         print("\nle graphe n'est pas un graphe d'ordonnancement\n")
         return
     ranks = graphs[x].get_ranks()
