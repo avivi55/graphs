@@ -139,4 +139,5 @@ while(True):
         continue
     
     except KeyboardInterrupt:
+        print()
         break
