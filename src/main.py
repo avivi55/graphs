@@ -1,5 +1,4 @@
 from pathlib import Path
-from time import sleep
 
 from tabulate import tabulate
 from Graph import Graph
@@ -7,7 +6,7 @@ from rich import print, table
 import graphviz
 
 
-graphs = [Graph.from_file(i) for i in range(1, 15)]
+graphs: list[Graph] = [Graph.from_file(i) for i in range(1, 15)]
 
 main_prompt_message = "Entrez le numéro d'un graphe [1; 14]\n"
 
@@ -25,24 +24,24 @@ graph_prompt_message = {
 def get_infos(x: int):
     print()
     
-    if graphs[x].has_negative_arcs():
+    if graphs[x].negative_arcs:
         print("Le graphe à des arcs à valeurs négatives")
     else:
         print("Aucunes valeurs d'arc n'est négative")
     
-    if graphs[x].has_circuit_by_deletions()[0]:
+    if graphs[x].has_circuit:
         print("Le graphe a au moins un circuit")
     else:
         print("Le graphe n'a pas de circuit")
         
         
-    if graphs[x].has_negative_arcs() and not graphs[x].has_circuit_by_deletions()[0]: 
+    if graphs[x].negative_arcs and not graphs[x].has_circuit: 
         print("Toutes les conditions sont vérifiée, c'est un graphe d'ordonnancement")
     
     print()
         
 def get_calendars(x:int):
-    if graphs[x].has_circuit_by_deletions()[0] or graphs[x].has_negative_arcs():
+    if graphs[x].has_circuit or graphs[x].negative_arcs:
         print("\nle graphe n'est pas un graphe d'ordonnancement\n")
         return
     ranks = graphs[x].get_ranks()
@@ -91,7 +90,7 @@ def get_calendars(x:int):
 DIR = Path(__file__).parent.parent
 
 def show_graph(x: int, path: bool):
-    if graphs[x].has_circuit_by_deletions() or graphs[x].has_negative_arcs() or not path:
+    if graphs[x].has_circuit or graphs[x].negative_arcs or not path:
         graphviz.Source(graphs[x].to_dot_format()) \
             .render(outfile=((DIR / Path(f"traces/{graphs[x].number}.png"))), view=True, format="png")
         return
@@ -105,7 +104,7 @@ graph_commands = {
     "e": lambda x: get_infos(x),
     "r": lambda x: get_calendars(x),
     "t": lambda x: show_graph(x, False),
-    "y": lambda x: print("\nle graphe n'est pas un graphe d'ordonnancement\n" if (graphs[x].has_circuit_by_deletions()[0] or graphs[x].has_negative_arcs()) else graphs[x].get_longest_path()),
+    "y": lambda x: print("\nle graphe n'est pas un graphe d'ordonnancement\n" if (graphs[x].has_circuit or graphs[x].negative_arcs) else graphs[x].get_longest_path()),
     "u": lambda x: show_graph(x, True),
 }
 

@@ -11,11 +11,11 @@ graphs = [Graph.from_file(i) for i in range(1, 15)]
 DIR = Path(__file__).parent.parent
 
 for graph in graphs:
-    with open((DIR / Path(f"traces/{graph.number}.txt")), mode="w") as f:
+    with open((DIR / Path(f"traces/F3_{graph.number}.txt")), mode="w") as f:
         graphviz.Source(graph.to_dot_format()) \
-            .render(outfile=((DIR / Path(f"traces/{graph.number}.png"))), view=False, format="png")
+            .render(outfile=((DIR / Path(f"traces/F3_{graph.number}.png"))), view=False, format="png")
         
-        os.remove(Path(DIR) / Path(f'traces/{graph.number}.gv'))
+        os.remove(Path(DIR) / Path(f'traces/F3_{graph.number}.gv'))
         
         f.write(f"Graphe de test n°{graph.number}")
         f.write('\n')
@@ -61,7 +61,7 @@ for graph in graphs:
             f.write("C'est un graphe d'ordonnancement\n")
             
             
-            ranks = graph.get_ranks()
+            ranks = graph.ranks
             
             latest = dict(sorted(graph.get_latest_calendar().items(), key=lambda x: ranks.get(x[0])))
             earliest = dict(sorted(graph.get_earliest_calendar().items(), key=lambda x: ranks.get(x[0])))
@@ -138,9 +138,9 @@ for graph in graphs:
             print(graph.get_longest_path(), file=f)
             
             graphviz.Source(graph.to_dot_format(True)) \
-                .render(outfile=((DIR / Path(f"traces/{graph.number}_highlighted_path.png"))), view=False, format="png")
+                .render(outfile=((DIR / Path(f"traces/F3_{graph.number}_highlighted_path.png"))), view=False, format="png")
                 
-            os.remove(Path(DIR) / Path(f'traces/{graph.number}_highlighted_path.gv'))
+            os.remove(Path(DIR) / Path(f'traces/F3_{graph.number}_highlighted_path.gv'))
         
             
         
