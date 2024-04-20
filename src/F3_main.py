@@ -120,7 +120,12 @@ def focus_on_graph(number: int):
         if not user_command in graph_commands.keys():
             continue
         
-        graph_commands[user_command](number)
+        try:
+            graph_commands[user_command](number)
+            
+        except graphviz.ExecutableNotFound:
+            print("VOUS N'AVEZ PAS INSTALLÉ L'EXECUTABLE GRAPHVIZ SUR VOTRE MACHINE!!!!!!!")
+            continue
 
 
 while(True):
