@@ -11,14 +11,18 @@ To use the possibility of graphical rendering, you must download the graphviz ex
 The given test graphs are in `graphs/`
 
 All execution traces can be found in the `traces/` folder and was generated with the `src/traces.py` script.
-
 This includes the textual traces which are named: `F3_<number_of_graph>.txt`, 
+the graphical render of the graph `F3_<number_of_graph>.png`, and if it is possible the graphical render with the longest path highlighted: `F3_<number_of_graph>_highlighted_path.png` 
 
-the graphical render of the graph `F3_<number_of_graph>.png`, 
+---
 
-and if it is possible the graphical render with the longest path highlighted: `F3_<number_of_graph>_highlighted_path.png` 
+- The `F3_main.py` script is the main program that was asked to do.
+- The `F3_trace.py` script is the script that generates the traces asked in the subject.
+- Lastly, `F3_Graph.py` is the data type representing a graph, containing all of the algorithms. 
+
 
 ---
 To execute the files on Windows you must add the `-X utf8` argument to python, because the windows console does not natively have utf8 encoding.
 
 example: `python -X utf8 F3_main.py`
+
