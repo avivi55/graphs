@@ -483,8 +483,8 @@ class Graph:
             The list of all the nodes that point to more than 1 node.
         """
         critical_path: dict[int, list[int]] = self.get_critical_path()
-        filtered: list[int] = list(filter(lambda node: len(critical_path[node]) >= 2 and node != self.first_node, critical_path.keys()))
-        return filtered
+        filter_func = lambda node: len(critical_path[node]) >= 2 and node != self.first_node
+        return list(filter(filter_func, critical_path.keys()))
 
     def get_longest_path(self) -> dict[int, list[int]]:
         """Gets the longest possible path in the graph.
