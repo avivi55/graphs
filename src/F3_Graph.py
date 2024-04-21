@@ -112,12 +112,13 @@ class Graph:
 
         nodes: list[int] = [int(s[0]) for s in splitted_string]
 
+
+        table[0] = {}
+
         # initialization of the table
         for node in nodes:
             if node not in table.keys():
                 table[node] = {}
-
-        table[0] = {}
 
         last_node: int = len(table.keys())
 
@@ -407,6 +408,26 @@ class Graph:
         # min(t_i) - d_i
         return min([self.get_node_latest_date(x) for x in successors]) - self.get_node_time(node)
 
+    def get_node_free_margin(self, node: int) -> int:
+        """Gets the free margin of a given node.
+        
+        Arguments:
+            node -- The given node.
+
+        Returns:
+            The free margin associated with the given node. 
+        """
+        successors: list[int] = self.get_successors(node)
+        
+        if not successors:
+            return self.get_node_earliest_date(node)
+        
+        node_early: int = self.get_node_earliest_date(node)
+        node_time: int = self.get_node_time(node)
+
+        # min(t_j - (t_i + d_i))
+        return min([self.get_node_earliest_date(x) - (node_early + node_time) for x in successors])
+
     def get_earliest_calendar(self) -> dict[int, int]:
 
         return {n : self.get_node_earliest_date(n) for n in self.table.keys()}
@@ -415,9 +436,13 @@ class Graph:
 
         return {n : self.get_node_latest_date(n) for n in self.table.keys()}
 
-    def get_margins(self) -> dict[int, int]:
+    def get_total_margins(self) -> dict[int, int]:
 
         return {n : self.get_node_latest_date(n) - self.get_node_earliest_date(n) for n in self.table}
+
+    def get_free_margins(self) -> dict[int, int]:
+
+        return {n : self.get_node_free_margin(n) for n in self.table}
 
     def get_critical_nodes(self) -> list[int]:
         """Gets all the nodes in the critical path.
@@ -425,7 +450,7 @@ class Graph:
         Returns:
             A dictionary of all the nodes in the critical path.
         """
-        margins: dict[int, int] = self.get_margins()
+        margins: dict[int, int] = self.get_total_margins()
 
         # we just keep the nodes with a margin equal to 0.
         nodes: list[int] = list(dict(filter(lambda pair: pair[1] == 0, margins.items())).keys())

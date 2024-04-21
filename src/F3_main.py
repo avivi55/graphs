@@ -48,7 +48,7 @@ def get_calendars(x:int):
             
     latest = dict(sorted(graphs[x].get_latest_calendar().items(), key=lambda x: ranks.get(x[0])))
     earliest = dict(sorted(graphs[x].get_earliest_calendar().items(), key=lambda x: ranks.get(x[0])))
-    margins = dict(sorted(graphs[x].get_margins().items(), key=lambda x: ranks.get(x[0])))
+    margins = dict(sorted(graphs[x].get_total_margins().items(), key=lambda x: ranks.get(x[0])))
     
     t = table.Table(title="Rangs", show_lines=True)
     t.add_column("noeud")
@@ -76,7 +76,7 @@ def get_calendars(x:int):
     t.add_row("dates au plus tard", *[str(x) for x in latest.values()])
     print(t)
     
-    t = table.Table(title="Marges", show_lines=True)
+    t = table.Table(title="Marges Total", show_lines=True)
     t.add_column("rang")
     for e in ranks.values():
         t.add_column(str(e))
@@ -84,6 +84,14 @@ def get_calendars(x:int):
     t.add_row("dates au plus tard", *[str(x) for x in latest.values()])
     t.add_row("dates au plus tôt", *[str(x) for x in earliest.values()])
     t.add_row("marges", *[str(x) for x in margins.values()])
+    print(t)
+
+    t = table.Table(title="Marges Libres", show_lines=True)
+    t.add_column("rang")
+    for e in ranks.values():
+        t.add_column(str(e))
+    t.add_row("noeud", *[f"{k}" for k in ranks.keys()])
+    t.add_row("marges", *[str(x) for x in graphs[x].get_free_margins().values()])
     print(t)
 
 
@@ -136,6 +144,7 @@ while(True):
         graph = int(user_command) - 1
         
         if 0 <= graph < len(graphs):
+            print()
             focus_on_graph(graph)
             print()
         

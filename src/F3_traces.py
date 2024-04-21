@@ -42,7 +42,11 @@ for graph in graphs:
         
         f.write('\n')
         f.write("Matrice des valeurs\n")
-        print(tabulate(graph.get_value_matrix(), tablefmt="rounded_grid"), file=f)
+        
+        i=-1
+        m = [[str(i:=i+1)] + x for x in graph.get_value_matrix()]
+        
+        print(tabulate(m, tablefmt="rounded_grid", headers=[f"n°{graph.number}"]+[str(i) for i in range(graph.size)]), file=f)
         
         f.write('\n')
         f.write("Aucunes valeurs n'est négative\n")
@@ -65,7 +69,7 @@ for graph in graphs:
             
             latest = dict(sorted(graph.get_latest_calendar().items(), key=lambda x: ranks.get(x[0])))
             earliest = dict(sorted(graph.get_earliest_calendar().items(), key=lambda x: ranks.get(x[0])))
-            margins = dict(sorted(graph.get_margins().items(), key=lambda x: ranks.get(x[0])))
+            margins = dict(sorted(graph.get_total_margins().items(), key=lambda x: ranks.get(x[0])))
             
             
             f.write('\n')  
@@ -118,7 +122,25 @@ for graph in graphs:
             
             f.write('\n')
             
-            t = table.Table(title="Marges", show_lines=True)
+            t = table.Table(title="Marges Libres", show_lines=True)
+            
+            t.add_column("rang")
+            for e in ranks.values():
+                t.add_column(str(e))
+                
+            t.add_row("noeud", *[f"{k}" for k in ranks.keys()])
+            
+            # t.add_row("dates au plus tard", *[str(x) for x in latest.values()])
+            # t.add_row("dates au plus tôt", *[str(x) for x in earliest.values()])
+            t.add_row("marges", *[str(x) for x in graph.get_free_margins().values()])
+            
+            print(t, file=f)
+            
+            
+            
+            f.write('\n')
+            
+            t = table.Table(title="Marges Totales", show_lines=True)
             
             t.add_column("rang")
             for e in ranks.values():
